@@ -222,14 +222,14 @@ const NT_DATA = {
   'Tiltil':       { rangos: {'4-5':-3.5,'5-6':-31.5}, pob:570 },
 };
 const BASICA_DATA = [
-  {rango:'6-7',  dda:  51,pob:2182,pub:1806,priv:1154,sae:325},
-  {rango:'7-8',  dda: 174,pob:2168,pub:1716,priv:1120,sae:279},
-  {rango:'8-9',  dda:  76,pob:2096,pub:1814,priv:1233,sae:206},
-  {rango:'9-10', dda:  72,pob:2076,pub:1863,priv:1289,sae:140},
-  {rango:'10-11',dda:  76,pob:2058,pub:1871,priv:1228,sae:111},
-  {rango:'11-12',dda: -46,pob:1920,pub:1892,priv:1227,sae: 73},
-  {rango:'12-13',dda:-521,pob:1882,pub:2089,priv:1170,sae:314},
-  {rango:'13-14',dda:-461,pob:1836,pub:2070,priv:1162,sae:227},
+  {rango:'6-7',  dda:  50.5,pob:2182,pub:1806,priv:1154,sae:325},
+  {rango:'7-8',  dda: 173.5,pob:2169,pub:1716,priv:1120,sae:279},
+  {rango:'8-9',  dda:  75.5,pob:2096,pub:1814,priv:1233,sae:206},
+  {rango:'9-10', dda:  72.5,pob:2076,pub:1863,priv:1289,sae:140},
+  {rango:'10-11',dda:  76.0,pob:2058,pub:1871,priv:1228,sae:111},
+  {rango:'11-12',dda: -45.5,pob:1920,pub:1892,priv:1227,sae: 73},
+  {rango:'12-13',dda:-520.5,pob:1883,pub:2089,priv:1170,sae:314},
+  {rango:'13-14',dda:-460.5,pob:1837,pub:2070,priv:1162,sae:227},
 ];
 const MEDIA_DATA = {
   'Los Andes':    {rangos:{'14-15':-574.5,'15-16':-462,'16-17':-461.5,'17-18':-425},pob:3085},
@@ -296,7 +296,7 @@ function renderBasica(){
   const totPub=sum(rows.map(r=>r.pub));
   document.getElementById('basica-metrics').innerHTML=`
     <div class="metric-card"><div class="metric-label">DDa insatisfecha neta</div><div class="metric-value" style="color:${totDda>=0?'#1a5276':'#c0392b'}">${fmt(totDda)}</div><div class="metric-sub">${totDda>=0?'déficit':'sobreoferta'} en Colina</div></div>
-    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">7–14 años Colina</div></div>
+    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">6–14 años Colina</div></div>
     <div class="metric-card"><div class="metric-label">Matrícula pública</div><div class="metric-value">${fmt(totPub)}</div><div class="metric-sub">establecimientos gratuitos</div></div>`;
   const ddaData=rows.map(r=>r.dda);
   destroyChart('basica');
