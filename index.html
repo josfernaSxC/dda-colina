@@ -100,7 +100,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="setTab('nt')">NT — Parvularia (4–6 años)</button>
-    <button class="tab-btn" onclick="setTab('basica')">Básica (7–14 años)</button>
+    <button class="tab-btn" onclick="setTab('basica')">Básica (6–14 años)</button>
     <button class="tab-btn" onclick="setTab('media')">Media (14–18 años)</button>
   <button class="tab-btn" onclick="setTab('mapas')">Mapas territoriales</button>
   </div>
@@ -126,11 +126,12 @@
 
   <!-- ===== BÁSICA ===== -->
   <div class="panel" id="panel-basica">
-    <p class="nota">Alcance: solo Colina (suma comunal, DS 148)</p>
+    <p class="nota">Alcance: solo Colina · Rangos 6–7 a 13–14 años (DS 148)</p>
     <div class="filter-row">
       <span class="filter-label">Filtrar por rango:</span>
       <select id="basica-select" onchange="renderBasica()">
         <option value="all">Todos los rangos</option>
+        <option value="6-7">6–7 años</option>
         <option value="7-8">7–8 años</option>
         <option value="8-9">8–9 años</option>
         <option value="9-10">9–10 años</option>
@@ -211,33 +212,34 @@ const PALETTE = ['#3266ad','#e67e22','#27ae60','#8e44ad','#e74c3c','#16a085','#d
 const BLUE='#3266ad', RED='#c0392b', ORANGE='#e67e22', GRAY='#73726c';
 
 const NT_DATA = {
-  'Los Andes':    { rangos: {'4-5':-160,'5-6':-263,'6-7':-498}, pob:2040 },
-  'Calle Larga':  { rangos: {'4-5':  40,'5-6':  26,'6-7': -30}, pob: 642 },
-  'Huechuraba':   { rangos: {'4-5': 892,'5-6': 718,'6-7': 657}, pob:4181 },
-  'Lo Barnechea': { rangos: {'4-5': 467,'5-6': 365,'6-7': 470}, pob:2596 },
-  'Quilicura':    { rangos: {'4-5':1278,'5-6': 914,'6-7': 310}, pob:11056 },
-  'Colina':       { rangos: {'4-5':1304,'5-6': 882,'6-7':  50}, pob:7544 },
-  'Lampa':        { rangos: {'4-5':1022,'5-6': 764,'6-7': 338}, pob:6848 },
-  'Tiltil':       { rangos: {'4-5':  -4,'5-6': -32,'6-7':-133}, pob: 842 },
+  'Los Andes':    { rangos: {'4-5':-159.5,'5-6':-263}, pob:1378 },
+  'Calle Larga':  { rangos: {'4-5':39.5,'5-6':26.5}, pob:427 },
+  'Huechuraba':   { rangos: {'4-5':892.5,'5-6':717.5}, pob:2858 },
+  'Lo Barnechea': { rangos: {'4-5':467,'5-6':365}, pob:1678 },
+  'Quilicura':    { rangos: {'4-5':1278.5,'5-6':914.5}, pob:7424 },
+  'Colina':       { rangos: {'4-5':1303.5,'5-6':882.5}, pob:5362 },
+  'Lampa':        { rangos: {'4-5':1022,'5-6':764}, pob:4658 },
+  'Tiltil':       { rangos: {'4-5':-3.5,'5-6':-31.5}, pob:570 },
 };
 const BASICA_DATA = [
-  {rango:'7-8',  dda: 174,pob:2168,pub:1716,priv:1120,sae:279},
-  {rango:'8-9',  dda:  76,pob:2096,pub:1814,priv:1233,sae:206},
-  {rango:'9-10', dda:  72,pob:2076,pub:1863,priv:1289,sae:140},
-  {rango:'10-11',dda:  76,pob:2058,pub:1871,priv:1228,sae:111},
-  {rango:'11-12',dda: -46,pob:1920,pub:1892,priv:1227,sae: 73},
-  {rango:'12-13',dda:-521,pob:1882,pub:2089,priv:1170,sae:314},
-  {rango:'13-14',dda:-461,pob:1836,pub:2070,priv:1162,sae:227},
+  {rango:'6-7',  dda:  50.5,pob:2182,pub:1806,priv:1154,sae:325},
+  {rango:'7-8',  dda: 173.5,pob:2169,pub:1716,priv:1120,sae:279},
+  {rango:'8-9',  dda:  75.5,pob:2096,pub:1814,priv:1233,sae:206},
+  {rango:'9-10', dda:  72.5,pob:2076,pub:1863,priv:1289,sae:140},
+  {rango:'10-11',dda:  76.0,pob:2058,pub:1871,priv:1228,sae:111},
+  {rango:'11-12',dda: -45.5,pob:1920,pub:1892,priv:1227,sae: 73},
+  {rango:'12-13',dda:-520.5,pob:1883,pub:2089,priv:1170,sae:314},
+  {rango:'13-14',dda:-460.5,pob:1837,pub:2070,priv:1162,sae:227},
 ];
 const MEDIA_DATA = {
-  'Los Andes':    {rangos:{'14-15':-574,'15-16':-462,'16-17':-462,'17-18':-425},pob:3085},
-  'Calle Larga':  {rangos:{'14-15':  12,'15-16':  32,'16-17':  18,'17-18':  32},pob: 774},
-  'Huechuraba':   {rangos:{'14-15': 602,'15-16': 708,'16-17': 715,'17-18': 746},pob:4398},
-  'Lo Barnechea': {rangos:{'14-15': 666,'15-16': 741,'16-17': 578,'17-18': 612},pob:4196},
-  'Quilicura':    {rangos:{'14-15': 590,'15-16': 973,'16-17': 586,'17-18': 704},pob:16058},
-  'Colina':       {rangos:{'14-15':-238,'15-16':-121,'16-17':-188,'17-18':-127},pob:7210},
-  'Lampa':        {rangos:{'14-15': 623,'15-16': 545,'16-17': 664,'17-18': 695},pob:7745},
-  'Tiltil':       {rangos:{'14-15':-101,'15-16':  34,'16-17': -40,'17-18':  15},pob:1176},
+  'Los Andes':    {rangos:{'14-15':-574.5,'15-16':-462,'16-17':-461.5,'17-18':-425},pob:3085},
+  'Calle Larga':  {rangos:{'14-15':  11.5,'15-16':  31.5,'16-17':  17.5,'17-18':  31.5},pob: 774},
+  'Huechuraba':   {rangos:{'14-15': 601.5,'15-16': 708,'16-17': 715,'17-18': 745.5},pob:4398},
+  'Lo Barnechea': {rangos:{'14-15': 666,'15-16': 740.5,'16-17': 577.5,'17-18': 611.5},pob:4196},
+  'Quilicura':    {rangos:{'14-15': 589.5,'15-16': 973,'16-17': 586,'17-18': 704},pob:16058},
+  'Colina':       {rangos:{'14-15':-237.5,'15-16':-120.5,'16-17':-188,'17-18':-126.5},pob:7210},
+  'Lampa':        {rangos:{'14-15': 623,'15-16': 545,'16-17': 663.5,'17-18': 694.5},pob:7745},
+  'Tiltil':       {rangos:{'14-15':-101,'15-16':  33.5,'16-17': -40,'17-18':  14.5},pob:1176},
 };
 
 const fmt = n => Math.round(n).toLocaleString('es-CL');
@@ -263,8 +265,8 @@ ntComunas.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.te
 function renderNT(){
   const sel=ntSel.value;
   const comunas=sel==='all'?ntComunas:[sel];
-  const rangos=['4-5','5-6','6-7'];
-  const labels=['4–5','5–6','6–7'];
+  const rangos=['4-5','5-6'];
+  const labels=['Pre-Kinder (4–5)','Kinder (5–6)'];
   const totDda=comunas.reduce((a,c)=>a+sum(Object.values(NT_DATA[c].rangos)),0);
   const totPob=comunas.reduce((a,c)=>a+NT_DATA[c].pob,0);
   document.getElementById('nt-metrics').innerHTML=`
@@ -294,7 +296,7 @@ function renderBasica(){
   const totPub=sum(rows.map(r=>r.pub));
   document.getElementById('basica-metrics').innerHTML=`
     <div class="metric-card"><div class="metric-label">DDa insatisfecha neta</div><div class="metric-value" style="color:${totDda>=0?'#1a5276':'#c0392b'}">${fmt(totDda)}</div><div class="metric-sub">${totDda>=0?'déficit':'sobreoferta'} en Colina</div></div>
-    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">7–14 años Colina</div></div>
+    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">6–14 años Colina</div></div>
     <div class="metric-card"><div class="metric-label">Matrícula pública</div><div class="metric-value">${fmt(totPub)}</div><div class="metric-sub">establecimientos gratuitos</div></div>`;
   const ddaData=rows.map(r=>r.dda);
   destroyChart('basica');
