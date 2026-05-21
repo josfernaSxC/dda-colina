@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demanda Insatisfecha — Colina y Territorio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #ebebeb;
+    --text: #111111; --text2: #555555; --text3: #888888;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius: 8px; --radius-lg: 12px;
+    --blue: #3266ad; --red: #c0392b; --orange: #e67e22; --gray: #73726c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --bg2: #252525; --bg3: #303030;
+      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+  /* Header */
+  .site-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; }
+  .site-header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+  .site-header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .header-meta { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+
+  /* Layout */
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+  .tab-btn { background: none; border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 18px; font-size: 13px; cursor: pointer; color: var(--text2); transition: all 0.15s; font-family: inherit; }
+  .tab-btn:hover { background: var(--bg2); }
+  .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 500; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 600px) { .metrics { grid-template-columns: 1fr 1fr; } }
+  .metric-card { background: var(--bg2); border-radius: var(--radius); padding: 14px 16px; border: 1px solid var(--border); }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  /* Filter row */
+  .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+  select { font-size: 13px; padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit; }
+
+  /* Toggle pills */
+  .comunas-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .toggle-pill { display: flex; align-items: center; gap: 5px; font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2); cursor: pointer; background: var(--bg2); color: var(--text2); user-select: none; transition: all 0.12s; }
+  .toggle-pill.on { color: #fff; }
+
+  /* Chart wrappers */
+  .chart-wrap { position: relative; width: 100%; margin-bottom: 8px; }
+  .chart-wrap-sm { height: 260px; }
+  .chart-wrap-md { height: 300px; }
+  .chart-wrap-lg { height: 320px; }
+
+  /* Section title */
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin: 20px 0 10px; }
+
+  /* Legend */
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 20px; font-size: 12px; color: var(--text2); }
+  .leg { display: flex; align-items: center; gap: 5px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Nota */
+  .nota { font-size: 11px; color: var(--text3); font-style: italic; margin: 4px 0 16px; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* Footer */
+  .site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 1.2rem 2rem; text-align: center; font-size: 12px; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Demanda Insatisfecha Educacional — Colina y Territorio</h1>
+  <p>Análisis metodológico conforme al Decreto Supremo N° 148, Ministerio de Educación</p>
+  <div class="header-meta">
+    <span class="badge">Mayo 2026</span>
+    <span class="badge">8 comunas</span>
+    <span class="badge">3 niveles educativos</span>
+    <span class="badge">Datos MINEDUC / INE</span>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('nt')">NT — Parvularia (4–6 años)</button>
+    <button class="tab-btn" onclick="setTab('basica')">Básica (6–14 años)</button>
+    <button class="tab-btn" onclick="setTab('media')">Media (14–18 años)</button>
+  <button class="tab-btn" onclick="setTab('mapas')">Mapas territoriales</button>
+  <button class="tab-btn" onclick="setTab('directorio')">Directorio establecimientos</button>
+  </div>
+
+  <!-- ===== NT ===== -->
+  <div class="panel active" id="panel-nt">
+    <p class="nota">Alcance territorial: todas las comunas del territorio</p>
+    <div class="filter-row">
+      <span class="filter-label">Filtrar por comuna:</span>
+      <select id="nt-select" onchange="renderNT()">
+        <option value="all">Todas las comunas</option>
+      </select>
+    </div>
+    <div class="metrics" id="nt-metrics"></div>
+    <p class="section-title">Demanda insatisfecha por rango etario</p>
+    <div class="chart-wrap chart-wrap-sm"><canvas id="chartNT" role="img" aria-label="Demanda insatisfecha NT por rango etario"></canvas></div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-dot" style="background:#3266ad"></div>Demanda positiva</div>
+      <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>Sobreoferta</div>
+    </div>
+    <p class="nota" id="nt-nota"></p>
+  </div>
+
+  <!-- ===== BÁSICA ===== -->
+  <div class="panel" id="panel-basica">
+    <p class="nota">Alcance: solo Colina · Rangos 6–7 a 13–14 años (DS 148)</p>
+    <div class="filter-row">
+      <span class="filter-label">Filtrar por rango:</span>
+      <select id="basica-select" onchange="renderBasica()">
+        <option value="all">Todos los rangos</option>
+        <option value="6-7">6–7 años</option>
+        <option value="7-8">7–8 años</option>
+        <option value="8-9">8–9 años</option>
+        <option value="9-10">9–10 años</option>
+        <option value="10-11">10–11 años</option>
+        <option value="11-12">11–12 años</option>
+        <option value="12-13">12–13 años</option>
+        <option value="13-14">13–14 años</option>
+      </select>
+    </div>
+    <div class="metrics" id="basica-metrics"></div>
+    <p class="section-title">Demanda insatisfecha — Colina</p>
+    <div class="chart-wrap chart-wrap-sm"><canvas id="chartBasica" role="img" aria-label="DDa básica Colina por rango"></canvas></div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-dot" style="background:#3266ad"></div>Demanda positiva</div>
+      <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>Sobreoferta</div>
+    </div>
+    <hr class="divider">
+    <p class="section-title">Composición matrícula — Colina</p>
+    <div class="chart-wrap chart-wrap-sm"><canvas id="chartBasicaComp" role="img" aria-label="Composición matrícula básica Colina"></canvas></div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-dot" style="background:#3266ad"></div>Matrícula pública</div>
+      <div class="leg"><div class="leg-dot" style="background:#73726c"></div>Matrícula privada</div>
+      <div class="leg"><div class="leg-dot" style="background:#e67e22"></div>Matrícula SAE</div>
+    </div>
+  </div>
+
+  <!-- ===== MEDIA ===== -->
+  <div class="panel" id="panel-media">
+    <p class="nota">Alcance: todas las comunas del territorio (DS 148)</p>
+    <p class="section-title">Seleccionar comunas a comparar:</p>
+    <div class="comunas-wrap" id="media-toggles"></div>
+    <div class="metrics" id="media-metrics"></div>
+    <p class="section-title">Demanda insatisfecha por comuna</p>
+    <div class="chart-wrap chart-wrap-md"><canvas id="chartMedia" role="img" aria-label="DDa media por comuna"></canvas></div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-dot" style="background:#3266ad"></div>Déficit</div>
+      <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>Sobreoferta</div>
+    </div>
+    <hr class="divider">
+    <p class="section-title">Detalle por rango etario — comunas seleccionadas</p>
+    <div class="chart-wrap chart-wrap-md"><canvas id="chartMediaRango" role="img" aria-label="DDa media por rango y comuna"></canvas></div>
+    <div id="media-rango-legend" class="legend-row"></div>
+    <p class="nota">Comparación por rango etario (14–15, 15–16, 16–17, 17–18) de las comunas seleccionadas.</p>
+
+    <hr class="divider">
+    <p class="section-title">Cupos disponibles (Pub+SAE) y DDa insatisfecha por curso</p>
+    <p class="nota">Cupos = Matrícula pública + vacantes SAE · Verde = déficit · Rojo = sobreoferta</p>
+    <div style="overflow-x:auto;margin-bottom:16px;">
+      <table id="cupos-table" style="width:100%;border-collapse:collapse;font-family:inherit;font-size:12px;"></table>
+    </div>
+  </div>
+
+
+  <!-- ===== MAPAS ===== -->
+  <div class="panel" id="panel-mapas">
+    <p class="nota" style="margin-bottom:20px;">Distribución territorial de la demanda insatisfecha por nivel educativo. Escala de color: amarillo/naranja = mayor déficit · azul oscuro = sobreoferta.</p>
+
+    <p class="section-title">NT — Parvularia (4–6 años) · Todo el territorio</p>
+    <div style="text-align:center;margin-bottom:8px;">
+      <img id="img-nt" src="" alt="Mapa demanda insatisfecha NT 4-6 años" style="max-width:100%;border-radius:8px;border:1px solid var(--border);">
+    </div>
+    <p class="nota" style="text-align:center;margin-bottom:28px;">Figura 1. DDa insatisfecha NT por comuna. Total territorio: 9.380 niños.</p>
+
+    <p class="section-title">Educación Básica (7–14 años) · Solo Colina</p>
+    <div style="text-align:center;margin-bottom:8px;">
+      <img id="img-basica" src="" alt="Mapa demanda insatisfecha básica 7-14 años" style="max-width:100%;border-radius:8px;border:1px solid var(--border);">
+    </div>
+    <p class="nota" style="text-align:center;margin-bottom:28px;">Figura 2. DDa insatisfecha básica — Colina. DDa neta: −629 (sobreoferta).</p>
+
+    <p class="section-title">Educación Media (14–18 años) · Todo el territorio</p>
+    <div style="text-align:center;margin-bottom:8px;">
+      <img id="img-media" src="" alt="Mapa demanda insatisfecha media 14-18 años" style="max-width:100%;border-radius:8px;border:1px solid var(--border);">
+    </div>
+    <p class="nota" style="text-align:center;margin-bottom:8px;">Figura 3. DDa insatisfecha media por comuna. Total territorio: 8.148 jóvenes.</p>
+  </div>
+
+
+  <!-- ===== DIRECTORIO ===== -->
+  <div class="panel" id="panel-directorio">
+    <p class="nota" style="margin-bottom:14px;">363 establecimientos educacionales en el territorio · Fuente: MINEDUC</p>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <select id="dir-comuna" onchange="filterDir()" style="font-size:13px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:inherit;">
+        <option value="all">Todas las comunas</option>
+        <option>COLINA</option><option>QUILICURA</option><option>LAMPA</option>
+        <option>LOS ANDES</option><option>LO BARNECHEA</option><option>HUECHURABA</option>
+        <option>TILTIL</option><option>CALLE LARGA</option>
+      </select>
+      <select id="dir-depe" onchange="filterDir()" style="font-size:13px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:inherit;">
+        <option value="all">Todas las dependencias</option>
+        <option>Municipal</option>
+        <option>Servicio Local de Educación</option>
+        <option>Particular Subvencionado</option>
+        <option>Particular Pagado</option>
+        <option>Corp. de Administracion Delegada</option>
+      </select>
+      <select id="dir-pago" onchange="filterDir()" style="font-size:13px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:inherit;">
+        <option value="all">Todos los aranceles</option>
+        <option value="GRATUITO">Gratuito</option>
+        <option value="PAGADO">Pagado</option>
+      </select>
+      <span id="dir-count" style="font-size:12px;color:var(--text3);font-style:italic;"></span>
+    </div>
+
+    <!-- Métricas rápidas -->
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px;" id="dir-metrics"></div>
+
+    <!-- Mapa Leaflet -->
+    <div id="dir-map" style="width:100%;height:420px;border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:16px;z-index:0;"></div>
+
+    <!-- Tabla directorio -->
+    <div style="overflow-x:auto;">
+      <table id="dir-table" style="width:100%;border-collapse:collapse;font-size:12px;font-family:inherit;">
+        <thead id="dir-thead"></thead>
+        <tbody id="dir-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Análisis de demanda insatisfecha — Colina y comunas del territorio &nbsp;·&nbsp; DS N° 148 Mineduc &nbsp;·&nbsp; Mayo 2026
+</footer>
+
+<script>
+const PALETTE = ['#3266ad','#e67e22','#27ae60','#8e44ad','#e74c3c','#16a085','#d35400','#2c3e50'];
+const MAPS = {
+  nt: "mapa_Colina_nt.png",
+  basica: "mapa_Colina_basica.png",
+  media: "mapa_Colina_media.png",
+};
+const BLUE='#3266ad', RED='#c0392b', ORANGE='#e67e22', GRAY='#73726c';
+
+const NT_DATA = {
+  'Los Andes':    { rangos: {'4-5':-159.5,'5-6':-263}, pob:1378 },
+  'Calle Larga':  { rangos: {'4-5':39.5,'5-6':26.5}, pob:427 },
+  'Huechuraba':   { rangos: {'4-5':892.5,'5-6':717.5}, pob:2858 },
+  'Lo Barnechea': { rangos: {'4-5':467,'5-6':365}, pob:1678 },
+  'Quilicura':    { rangos: {'4-5':1278.5,'5-6':914.5}, pob:7424 },
+  'Colina':       { rangos: {'4-5':1303.5,'5-6':882.5}, pob:5362 },
+  'Lampa':        { rangos: {'4-5':1022,'5-6':764}, pob:4658 },
+  'Tiltil':       { rangos: {'4-5':-3.5,'5-6':-31.5}, pob:570 },
+};
+const BASICA_DATA = [
+  {rango:'6-7',  dda:  50.5,pob:2182,pub:1806,priv:1154,sae:325},
+  {rango:'7-8',  dda: 173.5,pob:2169,pub:1716,priv:1120,sae:279},
+  {rango:'8-9',  dda:  75.5,pob:2096,pub:1814,priv:1233,sae:206},
+  {rango:'9-10', dda:  72.5,pob:2076,pub:1863,priv:1289,sae:140},
+  {rango:'10-11',dda:  76.0,pob:2058,pub:1871,priv:1228,sae:111},
+  {rango:'11-12',dda: -45.5,pob:1920,pub:1892,priv:1227,sae: 73},
+  {rango:'12-13',dda:-520.5,pob:1883,pub:2089,priv:1170,sae:314},
+  {rango:'13-14',dda:-460.5,pob:1837,pub:2070,priv:1162,sae:227},
+];
+const MEDIA_DATA = {
+  'Los Andes':    {rangos:{'14-15':-574.5,'15-16':-462,'16-17':-461.5,'17-18':-425},pob:3085},
+  'Calle Larga':  {rangos:{'14-15':  11.5,'15-16':  31.5,'16-17':  17.5,'17-18':  31.5},pob: 774},
+  'Huechuraba':   {rangos:{'14-15': 601.5,'15-16': 708,'16-17': 715,'17-18': 745.5},pob:4398},
+  'Lo Barnechea': {rangos:{'14-15': 666,'15-16': 740.5,'16-17': 577.5,'17-18': 611.5},pob:4196},
+  'Quilicura':    {rangos:{'14-15': 589.5,'15-16': 973,'16-17': 586,'17-18': 704},pob:16058},
+  'Colina':       {rangos:{'14-15':-237.5,'15-16':-120.5,'16-17':-188,'17-18':-126.5},pob:7210},
+  'Lampa':        {rangos:{'14-15': 623,'15-16': 545,'16-17': 663.5,'17-18': 694.5},pob:7745},
+  'Tiltil':       {rangos:{'14-15':-101,'15-16':  33.5,'16-17': -40,'17-18':  14.5},pob:1176},
+};
+
+const fmt = n => Math.round(n).toLocaleString('es-CL');
+const sum = arr => arr.reduce((a,b)=>a+b,0);
+const barColor = v => v>=0 ? BLUE : RED;
+let charts = {};
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+let mapsLoaded=false;
+function injectMaps(){ document.getElementById('img-nt').src=MAPS.nt; document.getElementById('img-basica').src=MAPS.basica; document.getElementById('img-media').src=MAPS.media; }
+function setTab(t){
+  if(t==='mapas' && !mapsLoaded){ injectMaps(); mapsLoaded=true; }
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['nt','basica','media','mapas','directorio'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='directorio') initDirectorio();
+}
+
+// NT
+const ntComunas = Object.keys(NT_DATA);
+const ntSel = document.getElementById('nt-select');
+ntComunas.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; ntSel.appendChild(o); });
+
+function renderNT(){
+  const sel=ntSel.value;
+  const comunas=sel==='all'?ntComunas:[sel];
+  const rangos=['4-5','5-6'];
+  const labels=['Pre-Kinder (4–5)','Kinder (5–6)'];
+  const totDda=comunas.reduce((a,c)=>a+sum(Object.values(NT_DATA[c].rangos)),0);
+  const totPob=comunas.reduce((a,c)=>a+NT_DATA[c].pob,0);
+  document.getElementById('nt-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Demanda insatisfecha</div><div class="metric-value">${fmt(totDda)}</div><div class="metric-sub">niños sin cupo gratuito</div></div>
+    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">4–6 años</div></div>
+    <div class="metric-card"><div class="metric-label">% DDa / Pob.</div><div class="metric-value">${Math.round(totDda/totPob*100)}%</div><div class="metric-sub">brecha sobre demanda potencial</div></div>`;
+  document.getElementById('nt-nota').textContent=sel==='all'?'Suma de las 8 comunas del territorio por rango etario.':`Datos para ${sel} por rango etario.`;
+  const data=rangos.map(r=>comunas.reduce((a,c)=>a+NT_DATA[c].rangos[r],0));
+  destroyChart('nt');
+  charts['nt']=new Chart(document.getElementById('chartNT'),{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:data.map(barColor),borderWidth:0,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.parsed.y)+' niños'}}},
+      scales:{x:{ticks:{font:{size:13},autoSkip:false},grid:{display:false}},y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(128,128,128,0.1)'}}}}
+  });
+}
+renderNT();
+
+// Básica
+function renderBasica(){
+  const sel=document.getElementById('basica-select').value;
+  const rows=sel==='all'?BASICA_DATA:BASICA_DATA.filter(r=>r.rango===sel);
+  const labels=rows.map(r=>r.rango.replace('-','–'));
+  const totDda=sum(rows.map(r=>r.dda));
+  const totPob=sum(rows.map(r=>r.pob));
+  const totPub=sum(rows.map(r=>r.pub));
+  document.getElementById('basica-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">DDa insatisfecha neta</div><div class="metric-value" style="color:${totDda>=0?'#1a5276':'#c0392b'}">${fmt(totDda)}</div><div class="metric-sub">${totDda>=0?'déficit':'sobreoferta'} en Colina</div></div>
+    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">6–14 años Colina</div></div>
+    <div class="metric-card"><div class="metric-label">Matrícula pública</div><div class="metric-value">${fmt(totPub)}</div><div class="metric-sub">establecimientos gratuitos</div></div>`;
+  const ddaData=rows.map(r=>r.dda);
+  destroyChart('basica');
+  charts['basica']=new Chart(document.getElementById('chartBasica'),{
+    type:'bar',data:{labels,datasets:[{data:ddaData,backgroundColor:ddaData.map(barColor),borderWidth:0,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.parsed.y)+' niños'}}},
+      scales:{x:{ticks:{font:{size:12},autoSkip:false},grid:{display:false}},y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(128,128,128,0.1)'}}}}
+  });
+  destroyChart('basicaComp');
+  charts['basicaComp']=new Chart(document.getElementById('chartBasicaComp'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Pública', data:rows.map(r=>r.pub), backgroundColor:BLUE,   borderWidth:0,borderRadius:3},
+      {label:'Privada', data:rows.map(r=>r.priv),backgroundColor:GRAY,   borderWidth:0,borderRadius:3},
+      {label:'SAE',     data:rows.map(r=>r.sae), backgroundColor:ORANGE, borderWidth:0,borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)}}},
+      scales:{x:{ticks:{font:{size:12},autoSkip:false},grid:{display:false}},y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(128,128,128,0.1)'}}}}
+  });
+}
+renderBasica();
+
+// Media
+const mediaComunas=Object.keys(MEDIA_DATA);
+let mediaSelected=new Set(mediaComunas);
+
+function buildMediaToggles(){
+  const wrap=document.getElementById('media-toggles');
+  mediaComunas.forEach((c,i)=>{
+    const el=document.createElement('div');
+    el.className='toggle-pill on';
+    el.style.background=PALETTE[i%PALETTE.length];
+    el.style.borderColor=PALETTE[i%PALETTE.length];
+    el.textContent=c;
+    el.onclick=()=>{
+      if(mediaSelected.has(c)){
+        if(mediaSelected.size<=1) return;
+        mediaSelected.delete(c);
+        el.classList.remove('on');
+        el.style.background='';
+        el.style.borderColor='';
+        el.style.color='';
+      } else {
+        mediaSelected.add(c);
+        el.classList.add('on');
+        el.style.background=PALETTE[i%PALETTE.length];
+        el.style.borderColor=PALETTE[i%PALETTE.length];
+        el.style.color='#fff';
+      }
+      renderMedia();
+    };
+    wrap.appendChild(el);
+  });
+}
+
+function renderMedia(){
+  setTimeout(buildCuposTable, 50);
+  const sel=[...mediaSelected];
+  const totDda=sel.reduce((a,c)=>a+sum(Object.values(MEDIA_DATA[c].rangos)),0);
+  const totPob=sel.reduce((a,c)=>a+MEDIA_DATA[c].pob,0);
+  const pos=sel.filter(c=>sum(Object.values(MEDIA_DATA[c].rangos))>0).length;
+  document.getElementById('media-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">DDa insatisfecha total</div><div class="metric-value">${fmt(totDda)}</div><div class="metric-sub">selección actual</div></div>
+    <div class="metric-card"><div class="metric-label">Población ajustada</div><div class="metric-value">${fmt(totPob)}</div><div class="metric-sub">14–18 años</div></div>
+    <div class="metric-card"><div class="metric-label">Comunas con déficit</div><div class="metric-value">${pos} de ${sel.length}</div><div class="metric-sub">seleccionadas</div></div>`;
+  const ddaVals=sel.map(c=>sum(Object.values(MEDIA_DATA[c].rangos)));
+  const colors=sel.map((c,i)=>{
+    const v=sum(Object.values(MEDIA_DATA[c].rangos));
+    return v>=0 ? PALETTE[mediaComunas.indexOf(c)%PALETTE.length] : RED;
+  });
+  destroyChart('media');
+  charts['media']=new Chart(document.getElementById('chartMedia'),{
+    type:'bar',data:{labels:sel,datasets:[{data:ddaVals,backgroundColor:colors,borderWidth:0,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.parsed.y)+' jóvenes'}}},
+      scales:{x:{ticks:{font:{size:12},autoSkip:false,maxRotation:30},grid:{display:false}},y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(128,128,128,0.1)'}}}}
+  });
+  const rangos=['14-15','15-16','16-17','17-18'];
+  const rLabels=['14–15','15–16','16–17','17–18'];
+  const datasets=sel.map(c=>({
+    label:c,
+    data:rangos.map(r=>MEDIA_DATA[c].rangos[r]),
+    backgroundColor:PALETTE[mediaComunas.indexOf(c)%PALETTE.length],
+    borderWidth:0,borderRadius:2,
+  }));
+  destroyChart('mediaRango');
+  charts['mediaRango']=new Chart(document.getElementById('chartMediaRango'),{
+    type:'bar',data:{labels:rLabels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)}}},
+      scales:{x:{ticks:{font:{size:12},autoSkip:false},grid:{display:false}},y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(128,128,128,0.1)'}}}}
+  });
+  document.getElementById('media-rango-legend').innerHTML=sel.map(c=>{
+    const color=PALETTE[mediaComunas.indexOf(c)%PALETTE.length];
+    return `<div class="leg"><div class="leg-dot" style="background:${color}"></div>${c}</div>`;
+  }).join('');
+}
+buildMediaToggles();
+renderMedia();
+
+
+
+// ===== DIRECTORIO =====
+const EE_DATA = [
+  {n:"LICEO MAXIMILIANO SALAS MARCHAN",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Enseñanza Basica - Educacion Basica Adultos sin oficio - Media HC ninos y jovenes - Educacion Media HC Adultos",rbd:"1194",lat:-32.837029,lon:-70.600777},
+  {n:"LICEO COMERCIAL DE LOS ANDES",c:"LOS ANDES",d:"Corp. de Administracion Delegada",df:"Corp. de Administracion Delegada",p:"GRATUITO",niv:"Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"1195",lat:-32.83794,lon:-70.595123},
+  {n:"LICEO BICENTENARIO TÉCNICO AMANCAY",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Media TP comercial ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"1196",lat:-32.83543,lon:-70.596901},
+  {n:"ESCUELA ESPANA",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1197",lat:-32.83403,lon:-70.593643},
+  {n:"LICEO REPUBLICA ARGENTINA",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - 299 - Media HC ninos y jovenes",rbd:"1198",lat:-32.833179,lon:-70.603348},
+  {n:"LICEO POLITECNICO AMERICA",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"299 - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"1199",lat:-32.838959,lon:-70.599319},
+  {n:"ESCUELA JOHN KENNEDY",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - 299",rbd:"1200",lat:-32.838112,lon:-70.601334},
+  {n:"ESCUELA ESPECIAL VALLE ANDINO",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"1201",lat:-32.82714081,lon:-70.60449219},
+  {n:"ESCUELA FERROVIARIA",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1202",lat:-32.829861,lon:-70.607521},
+  {n:"ESCUELA GABRIELA MISTRAL",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1203",lat:-32.83149,lon:-70.576141},
+  {n:"ESCUELA BASICA GRAL.JOSE MIGUEL CARRERA",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1204",lat:-32.827621,lon:-70.605003},
+  {n:"C.E.I.A DR. OSVALDO ROJAS GONZALEZ",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Basica Adultos con oficio - Educacion Media HC Adultos - Educación Media T-P Industrial Adultos (Decreto N° 1000/2009)",rbd:"1206",lat:-32.83494186,lon:-70.59806824},
+  {n:"ESCUELA BASICA RIO BLANCO",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1208",lat:-32.909729,lon:-70.304443},
+  {n:"ESCUELA EL SAUCE",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1210",lat:-32.8353,lon:-70.548027},
+  {n:"ESCUELA IGNACIO CARRERA PINTO",c:"LOS ANDES",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1211",lat:-32.845539,lon:-70.595299},
+  {n:"LICEO PARTICULAR MIXTO LOS ANDES",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"1213",lat:-32.82795,lon:-70.613663},
+  {n:"COLEGIO MARIA AUXILIADORA",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"1214",lat:-32.83239,lon:-70.601646},
+  {n:"ESCUELA PARTICULAR SAN JOSE",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1215",lat:-32.82938,lon:-70.597954},
+  {n:"ESCUELA PARTICULAR HUMBERTO CASARINO",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1216",lat:-32.84277,lon:-70.600906},
+  {n:"LICEO SANTA CLARA",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1217",lat:-32.840691,lon:-70.598709},
+  {n:"ESCUELA PARTICULAR JEAN PIAGET",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1218",lat:-32.851681,lon:-70.588547},
+  {n:"ESCUELA PARTICULAR N°27 EDÉN DEL NIÑO",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1220",lat:-32.83136,lon:-70.597923},
+  {n:"COLEGIO ALCAZAR",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1221",lat:-32.835819,lon:-70.601418},
+  {n:"INSTITUTO CHACABUCO",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"1225",lat:-32.830241,lon:-70.59502},
+  {n:"COLEGIO MARIA MONTESSORI",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"1226",lat:-32.83164536,lon:-70.60905684},
+  {n:"COLEGIO PARTICULAR BREGA COLLEGE",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1229",lat:-32.828587,lon:-70.60548},
+  {n:"ESCUELA BASICA MARIA ISABEL DE BROWN",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1247",lat:-32.8722,lon:-70.651497},
+  {n:"ESCUELA BASICA LA PAMPILLA",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1248",lat:-32.858551,lon:-70.624107},
+  {n:"ESCUELA BASICA PEDRO AGUIRRE CERDA",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1249",lat:-32.86895,lon:-70.619431},
+  {n:"ESCUELA VICTOR KOERNER",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1250",lat:-32.843189,lon:-70.613243},
+  {n:"ESCUELA BASICA CRISTO REDENTOR",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1251",lat:-32.887718,lon:-70.59169},
+  {n:"ESCUELA BASICA VALLE ALEGRE",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1252",lat:-32.857368,lon:-70.662666},
+  {n:"INSTITUTO AGRICOLA PASCUAL BABURIZZA",c:"CALLE LARGA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica - 71",rbd:"1255",lat:-32.878819,lon:-70.588898},
+  {n:"COLEGIO PARTICULAR SAN JOSE",c:"CALLE LARGA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"1256",lat:-32.856899,lon:-70.628227},
+  {n:"LICEO JOSE DOMINGO CANAS",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8645",lat:-33.36578778,lon:-70.74235686},
+  {n:"ESCUELA DIFERENCIAL F N°254 MADRE TIERRA LO BARNECHEA",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual - 216",rbd:"8837",lat:-33.35347,lon:-70.50785},
+  {n:"INSTITUTO FERMIN VIVACETA",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"8839",lat:-33.36119,lon:-70.504845},
+  {n:"ESCUELA DE FARELLONES",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"8840",lat:-33.3576142,lon:-70.3267155},
+  {n:"COLEGIO PARROQUIAL SANTA ROSA DE LO BARNECHEA",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8841",lat:-33.36166739,lon:-70.5043675},
+  {n:"COLEGIO SAN JUAN DE KRONSTADT",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"8845",lat:-33.34946495,lon:-70.47476664},
+  {n:"COLEGIO ANGLO AMERICAN INTERNATIONAL SCHOOL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"8860",lat:-33.355781,lon:-70.48153},
+  {n:"COLEGIO THE NEWLAND SCHOOL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8869",lat:-33.359838,lon:-70.53316},
+  {n:"COLEGIO NIDO DE AGUILAS",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"8880",lat:-33.351539,lon:-70.50129},
+  {n:"COLEGIO APOQUINDO HOMBRES",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"0",rbd:"8881",lat:-33.34593574,lon:-70.50679168},
+  {n:"COLEGIO APOQUINDO FEMENINO",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"0",rbd:"8889",lat:-33.34610685,lon:-70.50436196},
+  {n:"COLEGIO LINCOLN INTERNATIONAL ACADEMY",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8903",lat:-33.370274,lon:-70.51083},
+  {n:"COLEGIO CRAIGHOUSE",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8917",lat:-33.353908,lon:-70.52275},
+  {n:"COLEGIO SANTIAGO COLLEGE",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"8995",lat:-33.339544,lon:-70.544503},
+  {n:"INSTITUTO HEBREO DR CHAIM WEIZMANN-ORT",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"9237",lat:-33.369797,lon:-70.50739},
+  {n:"ESCUELA BASICA G-N°320 LIPANGUE",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"10133",lat:-33.33643358,lon:-70.85672157},
+  {n:"ESCUELA ESTADO DE MICHIGAN",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10239",lat:-33.36681974,lon:-70.73559355},
+  {n:"ESCUELA LUIS CRUZ MARTINEZ",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"10240",lat:-33.367279,lon:-70.71665627},
+  {n:"ESCUELA BASICA EL MANIO",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10241",lat:-33.37081645,lon:-70.74384787},
+  {n:"PARROQUIAL NUESTRA SEÑORA DEL CARMEN DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10245",lat:-33.3650046,lon:-70.72984056},
+  {n:"COLEGIO POLIV. SANTA MARIA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes",rbd:"10246",lat:-33.36956701,lon:-70.73572442},
+  {n:"ESCUELA BASICA PART PAULA JARAQUEMADA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10247",lat:-33.36708946,lon:-70.73171811},
+  {n:"CENTRO EDUCACIONAL BICENTENARIO DE EXCELENCIA DE HUECHURABA",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Enseñanza Basica - Educacion Basica Adultos sin oficio - Media HC ninos y jovenes - Educacion Media HC Adultos - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"10250",lat:-33.37459022,lon:-70.6342271},
+  {n:"ESCUELA BASICA CARLOS PRATS G.",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10272",lat:-33.36838837,lon:-70.63674587},
+  {n:"ESCUELA ADELAIDA LA FETRA",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10277",lat:-33.36655413,lon:-70.63423348},
+  {n:"ESCUELA SANTA VICTORIA DE HUECHURABA",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10285",lat:-33.37401336,lon:-70.64241618},
+  {n:"ESCUELA LAS CANTERAS",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10290",lat:-33.37636703,lon:-70.62359714},
+  {n:"ESCUELA SANTIAGO DE GUAYAQUIL",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10305",lat:-33.37853614,lon:-70.64311721},
+  {n:"ESCUELA JOSE ABELARDO NUÑEZ Nº 3",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10324",lat:-33.37478971,lon:-70.64029001},
+  {n:"COLEGIO MATER DOLOROSA",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"10337",lat:-33.37498257,lon:-70.63959733},
+  {n:"ESCUELA PART. SANTA LUISA DE MARILLAC",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10359",lat:-33.35985061,lon:-70.63224336},
+  {n:"LICEO POLIVALENTE SAINT ANDREWS",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"10377",lat:-33.2801402994141,lon:-70.7525863817182},
+  {n:"ESCUELA ESPECIAL BELLA ESPERANZA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"10386",lat:-33.36696,lon:-70.73392},
+  {n:"LICEO REBECA OLIVARES BENITEZ",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos - Educación Media T-P Industrial Adultos (Decreto N° 1000/2009)",rbd:"10398",lat:-33.212624,lon:-70.681755},
+  {n:"LICEO POLIVALENTE RIGOBERTO FONTT I.",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Media HC ninos y jovenes - Educacion Media HC Adultos - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"10399",lat:-33.19464078,lon:-70.67439897},
+  {n:"ESCUELA BASICA MARCOS GOOYCOLEA CORTES",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Basica Adultos sin oficio",rbd:"10400",lat:-33.20774126,lon:-70.67902583},
+  {n:"ESCUELA BASICA SANTA TERESA DEL CARMELO",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"10401",lat:-33.20630044,lon:-70.67110269},
+  {n:"ESCUELA ESPECIAL ERNESTO SOTO NEGRETE",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"10402",lat:-33.209904,lon:-70.67945},
+  {n:"ESCUELA PREMIO NOBEL PABLO NERUDA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10403",lat:-33.1959497,lon:-70.67375371},
+  {n:"ANDALIEN DE COLINA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10404",lat:-33.20815084,lon:-70.68373231},
+  {n:"LICEO ESMERALDA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"10405",lat:-33.1845,lon:-70.6518},
+  {n:"ESCUELA BASICA ALGARROBAL",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10407",lat:-33.3074,lon:-70.6969},
+  {n:"LICEO PELDEHUE",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"10408",lat:-33.177,lon:-70.64},
+  {n:"ESC.BASICA FRANCISCO PETRINOVIC KARLOVAC",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10409",lat:-33.20373094,lon:-70.67510843},
+  {n:"ESCUELA BASICA SAN VICENTE DE LO ARCAYA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10410",lat:-33.24264966,lon:-70.68549901},
+  {n:"ESCUELA BASICA SANTA MARTA DE LIRAY",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10411",lat:-33.24710518,lon:-70.75265447},
+  {n:"ESCUELA SAN FRANCISCO DE ASIS",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10412",lat:-33.30205665,lon:-70.71001926},
+  {n:"ESCUELA PARTICULAR PAPELUCHO",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10413",lat:-33.20360051,lon:-70.68007343},
+  {n:"ESCUELA PARTICULAR DESIREE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"10415",lat:-33.20199253,lon:-70.67836612},
+  {n:"CENTRO DE TRATAMIENTO INTEGRAL LOS LAURELES",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"217",rbd:"10416",lat:-33.233402,lon:-70.71022},
+  {n:"ESCUELA PARTICULAR JUAN CALVINO",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"10418",lat:-33.19142715,lon:-70.66251752},
+  {n:"LICEO BICENTENARIO MANUEL PLAZA REYES DE LAMPA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Media HC ninos y jovenes - Educacion Media HC Adultos - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"10419",lat:-33.28672949,lon:-70.87187869},
+  {n:"ESCUELA MANUEL SEGOVIA MONTENEGRO",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Basica Adultos sin oficio",rbd:"10420",lat:-33.28608011,lon:-70.87351205},
+  {n:"ESCUELA REPUBLICA DE POLONIA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10421",lat:-33.23969409,lon:-70.81209358},
+  {n:"ESCUELA BASICA CACIQUE COLIN",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Media HC Adultos",rbd:"10422",lat:-33.29814343,lon:-70.79783365},
+  {n:"ESCUELA SANTA  BARBARA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10424",lat:-33.24309135,lon:-70.82385077},
+  {n:"ESCUELA POLONIA GUTIERREZ C.",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10425",lat:-33.2807056,lon:-70.88011593},
+  {n:"ESCUELA BASICA F-N°371 SANTA ROSA DE LAMPA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10426",lat:-33.26135131,lon:-70.75796278},
+  {n:"ESCUELA BASICA F - N°372 SANTA SARA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10427",lat:-33.2254176,lon:-70.77227636},
+  {n:"ESCUELA BASICA PROFESOR OMAR ARANDA ARAYA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10428",lat:-33.26409364,lon:-70.88231539},
+  {n:"NORMA GONZÁLEZ GUERRA",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10429",lat:-33.30157752,lon:-70.85862428},
+  {n:"ESCUELA BASICA SAN SEBASTIAN DE BATUCO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10430",lat:-33.22571238,lon:-70.8101331},
+  {n:"ESC. ESPECIAL PADRE LUIS GUANELLA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"10431",lat:-33.242644,lon:-70.765278},
+  {n:"LICEO POLIVALENTE MANUEL RODRIGUEZ",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Basica Adultos sin oficio - Media HC ninos y jovenes - Educacion Media HC Adultos - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"10432",lat:-33.08643915,lon:-70.92437662},
+  {n:"LICEO HUERTOS FAMILIARES",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"10433",lat:-33.13037191,lon:-70.80222209},
+  {n:"ESCUELA BASICA G-N°345 RUNGUE",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10435",lat:-33.00939177,lon:-70.89308975},
+  {n:"ESCUELA BASICA G-N° 346",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10436",lat:-33.018425,lon:-70.892204},
+  {n:"ESCUELA BASICA G-N°348",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"10439",lat:-33.0766669,lon:-70.77044364},
+  {n:"ESCUELA BASICA G-N°349",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"10441",lat:-33.00396523,lon:-70.99142868},
+  {n:"ESCUELA BASICA G-N°350",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"10442",lat:-33.0248778,lon:-70.97044575},
+  {n:"LICEO MONTENEGRO",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10443",lat:-32.96646445,lon:-70.83508639},
+  {n:"ESCUELA BASICA G-N°352 PLAZUELA DE POLPAICO",c:"TILTIL",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10444",lat:-33.15228928,lon:-70.88812452},
+  {n:"ESCUELA PARTICULAR LA MERCED",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"10447",lat:-33.09014963,lon:-70.91840629},
+  {n:"COLEGIO PARTICULAR CLAUDIO GAY",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"11203",lat:-32.847198,lon:-70.591339},
+  {n:"COLEGIO THE MAYFLOWER SCHOOL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"11776",lat:-33.346077,lon:-70.50415},
+  {n:"ESCUELA SAINT MARY SCHOOL",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"11837",lat:-33.20475428,lon:-70.67412944},
+  {n:"ESCUELA PART. STA. CLARISA DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"11838",lat:-33.20398132,lon:-70.68026279},
+  {n:"COLEGIO ABERSAN",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"11942",lat:-33.18134283,lon:-70.65309146},
+  {n:"COMPLEJO EDUCACIONAL J. MIGUEL CARRERA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"12117",lat:-33.36805171,lon:-70.73249527},
+  {n:"ESCUELA PARTIC SAN ISIDRO DE PERALILLO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"12127",lat:-33.35413257,lon:-70.87434421},
+  {n:"COLEGIO BICENTENARIO SAN ESTEBAN MARTIR",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media TP comercial ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"12225",lat:-33.3611543,lon:-70.50548959},
+  {n:"CENTRO EDUCACIONAL ERNESTO YANEZ RIVERA",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"12257",lat:-33.35944334,lon:-70.68576539},
+  {n:"COLEGIO DE ADULTOS MANQUEHUE DE TIL TIL",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"12766",lat:-33.112154,lon:-70.800544},
+  {n:"ESCUELA  ESPECIAL  N°2420 LA  HUERTA",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"13204",lat:-33.144745,lon:-70.79886},
+  {n:"ESCUELA ESPECIAL MUNDO COLOR",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Discapacidad Intelectual",rbd:"13206",lat:-32.817043,lon:-70.61741},
+  {n:"LICEO MIXTO LOS ANDES",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"14201",lat:-32.83633,lon:-70.599281},
+  {n:"SUN VALLEY COLLEGE",c:"CALLE LARGA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"14217",lat:-32.860901,lon:-70.58512},
+  {n:"ESCUELA PARV  ESTRELLITAS DE BELEN",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"$50.001 A $100.000",niv:"0",rbd:"14409",lat:-32.83018934,lon:-70.59728897},
+  {n:"COLEGIO EDUCENTER",c:"CALLE LARGA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"14414",lat:-32.85247,lon:-70.606506},
+  {n:"ESC.TRAST.DE LA COM. Y LENG. LAS VIOLETAS",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14578",lat:-32.829254,lon:-70.60976},
+  {n:"ESCUELA DE TRAST. DE LENGUAJE CELAN PAICAVÝ",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14588",lat:-32.84069,lon:-70.60764},
+  {n:"COLEGIO TRAST.DE LA COMUNIC MATICES",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14589",lat:-32.84069,lon:-70.60764},
+  {n:"COLEGIO SAN SEBASTIAN",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"14670",lat:-32.830769,lon:-70.6418},
+  {n:"ESCUELA DE LENGUAJE MIS VIOLETAS",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14755",lat:-32.847664,lon:-70.59284},
+  {n:"COLEGIO PARTICULAR ANDES-CHILE",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"14762",lat:-32.83037993,lon:-70.60577667},
+  {n:"JARDIN INFANTIL MASEJITOS",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"0",rbd:"14772",lat:-32.82991676,lon:-70.60660648},
+  {n:"ESCUELA ESPECIAL TALITAKUM",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"14864",lat:-32.834511,lon:-70.593155},
+  {n:"ESCUELA ESP.DE LENGUAJE VOCES DEL VALLE",c:"CALLE LARGA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14931",lat:-32.860935,lon:-70.60635},
+  {n:"ESC. ESP. DE LENGUAJE CUMBRES DE ACONCAGUA",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"14945",lat:-32.834194,lon:-70.60284},
+  {n:"LYCÉE ANTOINE DE SAINT - EXUPÉRY",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"16776",lat:-33.31904,lon:-70.65183},
+  {n:"ESCUELA ESPECIAL DE  LENGUAJE LOS  CHAVITOS",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16785",lat:-33.23749,lon:-70.80696},
+  {n:"ESCUELA DE PARVULOS N°2437,  COLEGIO ALEMÁN CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"16829",lat:-33.25922819,lon:-70.61772739},
+  {n:"ESCUELA  ESPECIAL  2438 `PEQUEÑOS  GENIOS  DE  VALLE  GRANDE`",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16832",lat:-33.32533,lon:-70.748346},
+  {n:"ESC.ESP.N°2439, MANQUEHUE DE TIL TIL",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16837",lat:-33.08642739,lon:-70.93112361},
+  {n:"ESCUELA  ESPECIAL  N° 2440 LEONARDO  DA  VINCI",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16866",lat:-33.344215,lon:-70.669917},
+  {n:"ESCUELA BÁSICA N°2442 `CENTRO EDUCACIONAL ERNESTO YAÑEZ RIVERA`",c:"HUECHURABA",d:"Municipal",df:"Municipal DAEM",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"16879",lat:-33.360353,lon:-70.67728},
+  {n:"ESCUELA BASICA COLEGIO SAN JUAN DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"16955",lat:-33.294804,lon:-70.88867},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE MAKIATO",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16988",lat:-32.81793,lon:-70.62},
+  {n:"CAMBRIDGE COLLEGE",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"16989",lat:-32.83549,lon:-70.597551},
+  {n:"ESCUELA ESPECIAL DIVINO NIÑO JESUS",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"16995",lat:-33.20083,lon:-70.67979},
+  {n:"COLEGIO ALTA CUMBRE",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Enseñanza Basica",rbd:"17000",lat:-32.840469,lon:-70.60865},
+  {n:"ESCUELA ESPECIAL N° 2458 KIMUNTUWE",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"20294",lat:-33.32874,lon:-70.74764},
+  {n:"COLEGIO HUINGANAL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"20311",lat:-33.3358981,lon:-70.5125515},
+  {n:"ESCUELA ESPECIAL N° 2462 SAN ANDRES DE BATUCO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"20321",lat:-33.22982,lon:-70.80412},
+  {n:"CARIQUEO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"20323",lat:-33.35246,lon:-70.73876},
+  {n:"ALTOS DEL HUERTO",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"20324",lat:-33.1315662,lon:-70.8023068},
+  {n:"ESCUELA BASICA N° 2464 `COLEGIO BASICO INTEGRADO PADRE PIO`",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Enseñanza Basica",rbd:"20329",lat:-33.080571,lon:-70.930359},
+  {n:"COLEGIO KIMEN MONTESSORI",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"20400",lat:-33.258093,lon:-70.719977},
+  {n:"ESCUELA BASICA N° 2468, RONALDO MUÑOZ GIBBS",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"20401",lat:-33.27697139,lon:-70.88730439},
+  {n:"ESCUELA DE PARVULOS N°2467 LARAPINTA EL SOL",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Parvularia",rbd:"20419",lat:-33.2968,lon:-70.86985},
+  {n:"ESCUELA BASICA N° 2469 COLEGIO NEHUEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"20426",lat:-33.29314,lon:-70.88568},
+  {n:"ESCUELA DE PAVULOS N°2471 ESCUELA PRE ESCOLAR CANTAGALLO",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Educacion Parvularia",rbd:"20428",lat:-33.36673,lon:-70.50989},
+  {n:"COLEGIO CABO DE HORNOS",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"20441",lat:-33.2006653,lon:-70.6593765},
+  {n:"COLEGIO WESTON ACADEMY",c:"LAMPA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"20445",lat:-33.32978689,lon:-70.76225039},
+  {n:"ESCUELA ESPECIAL N° 2478 ANGELES",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"20458",lat:-33.37896,lon:-70.72299},
+  {n:"ESCUELA ESPECIAL N° 2483 ANKATU",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"20487",lat:-33.20813,lon:-70.6712},
+  {n:"COLEGIO PUMAHUE CHICAUMA",c:"LAMPA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"20502",lat:-33.304008,lon:-70.738062},
+  {n:"COLEGIO SANTA TERESA DE JESUS DE LOS ANDES",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes",rbd:"24407",lat:-33.36333643,lon:-70.63164131},
+  {n:"COLEGIO SANTA CATALINA DE SIENA SAN ALBERTO HURTADO",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"0",rbd:"24432",lat:-33.3507982,lon:-70.50569448},
+  {n:"ESC. ESPECIAL PART.NUESTRO HORIZONTE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"24484",lat:-33.183002,lon:-70.64775},
+  {n:"COLEGIO POLIVALENTE SAN RAFAEL",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"24486",lat:-33.35082404,lon:-70.50700886},
+  {n:"ESC. BAS.MUNICIPAL MERCEDES FONTECILLA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"24520",lat:-33.36530653,lon:-70.70479879},
+  {n:"ESCUELA DE PARVULOS N°1424 SNOOPY",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"24616",lat:-33.20393824,lon:-70.68201262},
+  {n:"COLEGIO TABOR Y NAZARETH",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"24624",lat:-33.324935,lon:-70.54153},
+  {n:"COLEGIO HUELQUEN MONTESSORI",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"24718",lat:-33.351308,lon:-70.5048},
+  {n:"ESC. BASICA PART.PADRE ALBERTO HURTADO",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"24722",lat:-33.37465423,lon:-70.62750323},
+  {n:"COLEGIO SAN ANDRES DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"24733",lat:-33.20398456,lon:-70.68042496},
+  {n:"COMPLEJO EDUC. EDUARDO CUEVAS VALDES",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"0",rbd:"24751",lat:-33.359845,lon:-70.503283},
+  {n:"COLEGIO SAN ISAAC JOGUES",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"24769",lat:-33.36114464,lon:-70.72075132},
+  {n:"ESCUELA BASICA ESCRITOR PABLO NERUDA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica",rbd:"24881",lat:-33.36935402,lon:-70.72910117},
+  {n:"CENTRO DE TRASTORNOS DE LA COMUNICACION",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"24882",lat:-33.367626,lon:-70.63626},
+  {n:"LICEO HUMBERTO DIAZ CASANUEVA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"24900",lat:-33.19964,lon:-70.671684},
+  {n:"COLEGIO SAN  ANSELMO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"24927",lat:-33.272897,lon:-70.64245},
+  {n:"COLEGIO DESIREE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$25.001 A $50.000",niv:"0",rbd:"24945",lat:-33.203889,lon:-70.68115},
+  {n:"COLEGIO LOS ALERCES",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"24979",lat:-33.364072,lon:-70.51881},
+  {n:"ESCUELA PROFESORA MARIA LUISA SEPULVEDA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Especial Discapacidad Intelectual",rbd:"24999",lat:-33.36528526,lon:-70.7538659},
+  {n:"CTRO. ESTIMULAC. DEL LENGUAJE CELQUI",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25030",lat:-33.362988,lon:-70.75098},
+  {n:"COLEGIO POLIVALENTE SEMBRADOR",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"25032",lat:-33.20448223,lon:-70.67253519},
+  {n:"COLEGIO MAIMONIDES SCHOOL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25107",lat:-33.362086,lon:-70.48499},
+  {n:"ESCUELA ESPECIAL PAR. CELQUI",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25109",lat:-33.36708,lon:-70.71495},
+  {n:"T Y C SPECIAL SCHOOL",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25117",lat:-33.36882,lon:-70.736336},
+  {n:"ESC.DE TRAST.PRIM. DE LA COM.CHACABUCO",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25118",lat:-33.210346,lon:-70.67406},
+  {n:"COLEGIO SAN ANTONIO DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25121",lat:-33.18816002,lon:-70.66070278},
+  {n:"ESCUELA PART. MASTER SCHOOL DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25132",lat:-33.23564788,lon:-70.81049832},
+  {n:"COLEGIO SAN FRANCISCO JAVIER DE HUECHURABA",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25143",lat:-33.350334,lon:-70.68344},
+  {n:"COLEGIO RAYEN MAHUIDA",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25180",lat:-33.265436,lon:-70.72248},
+  {n:"LICEO ALCALDE JORGE INDO",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Media HC ninos y jovenes",rbd:"25182",lat:-33.36518478,lon:-70.70551471},
+  {n:"ESCUELA MUNICIPAL VALLE DE LUNA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25194",lat:-33.36751982,lon:-70.74413397},
+  {n:"COLEGIO  PUMAHUE HUECHURABA",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25202",lat:-33.357367,lon:-70.66317},
+  {n:"COLEGIO BERTAIT COLLEGE",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"25224",lat:-33.366617,lon:-70.51716},
+  {n:"ESCUELA BASICA RAYITO DE LUZ DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25225",lat:-33.3688604,lon:-70.736824},
+  {n:"LICEO DE ADULTOS POETA VICENTE HUIDOBRO",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"25235",lat:-33.36586,lon:-70.746765},
+  {n:"ESCUELA INMACULADA CONCEPCION",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25255",lat:-33.20513141,lon:-70.6780651},
+  {n:"ESC.PART.ESPECIAL LA CONCEPCION DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25283",lat:-33.204285,lon:-70.67813},
+  {n:"ESC. BAS. Y ESP. CENTRO INTEGRAL ALTAIR DE BA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25288",lat:-33.23598319,lon:-70.81352708},
+  {n:"COLEGIO SAN NICOLÁS DIÁCONO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25310",lat:-33.2746,lon:-70.7036},
+  {n:"ESC. ESP. PART, PALOMAR DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25317",lat:-33.36685411,lon:-70.72182589},
+  {n:"COLEGIO SANTA CRUZ DE CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25329",lat:-33.286892,lon:-70.67077},
+  {n:"COLEGIO MONTESSORI PUCALAN",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25332",lat:-33.241844,lon:-70.70038},
+  {n:"COLEGIO  SAN JOSE DE CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25348",lat:-33.278001,lon:-70.63866},
+  {n:"COLEGIO PARTICULAR MELFORD COLLEGE",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25349",lat:-33.36191173,lon:-70.72896112},
+  {n:"COLEGIO PARTICULAR NOVO MUNDO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25386",lat:-33.36287519,lon:-70.72137879},
+  {n:"COLEGIO PARTICULAR SAN SEBASTIAN DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"25387",lat:-33.36231712,lon:-70.75345495},
+  {n:"COLEGIO BETTERLAND SCHOOL",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25395",lat:-33.36419678,lon:-70.49712536},
+  {n:"ESC. ESPECIAL 1775 SAN ANTONIO II",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25398",lat:-33.284187,lon:-70.88761},
+  {n:"ESCUELA PARTICULAR N_ 1796 NUEVO HORIZONTE",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25430",lat:-33.36246,lon:-70.50871},
+  {n:"ESCUELA BASICA PART SANTA MARIA DE ESMERALDA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25431",lat:-33.18045083,lon:-70.66368205},
+  {n:"ESC. BAS. PART.  JERUSALEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25465",lat:-33.30479161,lon:-70.85536319},
+  {n:"ESC PART. SIGLO XXI DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Media HC Adultos",rbd:"25484",lat:-33.28220087,lon:-70.87251151},
+  {n:"ESC. BASICA  `SAN BENIGNO`",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25485",lat:-33.19562109,lon:-70.67811684},
+  {n:"COLEGIO  MANQUECURA VALLE LO CAMPINO",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25487",lat:-33.387556,lon:-70.72424},
+  {n:"COLEGIO DE ADULTOS JOSE ABELARDO NUNEZ",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"25502",lat:-33.374786,lon:-70.64029},
+  {n:"ESCUELA ESPECIAL N°1832 EXPLORADORES DE BATUCO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25506",lat:-33.232918,lon:-70.80998},
+  {n:"COLEGIO SANTA BARBARA H.S.",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25542",lat:-33.36935125,lon:-70.72428891},
+  {n:"ESCUELA PARTICULAR NUEVA ESMERALDA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25547",lat:-33.180042,lon:-70.654106},
+  {n:"ESCUELA ESPECIAL  PARTICULAR MELILLAN",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"25560",lat:-33.36941,lon:-70.72945},
+  {n:"ESCUELA ESPECIAL PART. UNAMKALEN",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"25585",lat:-33.19992,lon:-70.67346},
+  {n:"INSTITUTO SAN MIGUEL",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"25592",lat:-33.20854943,lon:-70.67290438},
+  {n:"MARY ANNE SCHOOL DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25593",lat:-33.36900608,lon:-70.72851845},
+  {n:"COLEGIO PART. SAN PEDRO DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25599",lat:-33.3585971,lon:-70.73988447},
+  {n:"ESC. ESP. SAN ANDRES DE LO BARNECHEA",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25614",lat:-33.361164,lon:-70.50469},
+  {n:"LICEO POLIV. SAN JOSE DE LO BARNECHEA",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"0",rbd:"25630",lat:-33.36128573,lon:-70.50324659},
+  {n:"ESCUELA BASICA N°1906 THE INTERNATIONAL PREPARATORY SCHOOL",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica",rbd:"25643",lat:-33.362296,lon:-70.48358},
+  {n:"COLEGIO EVEREST",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25654",lat:-33.334301,lon:-70.55418},
+  {n:"COLEGIO HIGHLANDS",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25669",lat:-33.218592,lon:-70.66314},
+  {n:"COLEGIO POLIV. MONTE CARMELO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"0",rbd:"25694",lat:-33.37130137,lon:-70.73640775},
+  {n:"ESCUELA PART. SANTA TERESA DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25733",lat:-33.35549321,lon:-70.73990359},
+  {n:"ESC. ESP. PART. TRIGAL DE HUECHURABA",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"25757",lat:-33.375095,lon:-70.63133},
+  {n:"COLEGIO PART. CHADWICK",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"0",rbd:"25758",lat:-33.36473964,lon:-70.4959691},
+  {n:"ESCUELA ESPECIAL PARTICULAR KINERET",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25786",lat:-33.36146,lon:-70.72925},
+  {n:"ESCUELA BASICA ANA FRANK",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25788",lat:-33.35866849,lon:-70.73691879},
+  {n:"ESCUELA ESP. PART. SANTA MARIA DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25792",lat:-33.37074,lon:-70.73504},
+  {n:"ESCUELA B-SICA PUCARA LASANA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25797",lat:-33.37732411,lon:-70.72770616},
+  {n:"LICEO MUNICIP. DE ADULTOS PEDRO J. RODRIGUEZ",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"25812",lat:-33.235577,lon:-70.805145},
+  {n:"ESCUELA ESP. PART. SAN PIO DE PIETRELCINA",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25819",lat:-33.079037,lon:-70.92803},
+  {n:"ESCUELA DE PARVULOS N°1977 LA VILLITA",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"25820",lat:-33.375725,lon:-70.63011},
+  {n:"COLEGIO PART. SAN ADRIAN DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25829",lat:-33.36128327,lon:-70.73088382},
+  {n:"COLEGIO POLIVALENTE NOVO HORIZONTE",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"25853",lat:-33.35796101,lon:-70.72128708},
+  {n:"LICEO BICENTENARIO CHACABUCO",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"25855",lat:-33.200233,lon:-70.678448},
+  {n:"ESCUELA ESP. PART. ACONCAGUA DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25884",lat:-33.20305,lon:-70.67969},
+  {n:"LICEO JOSE ABELARDO NUÑEZ Nº 4",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"25899",lat:-33.37435705,lon:-70.64123476},
+  {n:"ESCUELA PARTICULAR SUBVENCIONADA SAN JORGE DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25914",lat:-33.21208,lon:-70.67878},
+  {n:"ESCUELA BAS. SAN SEBASTIAN DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25916",lat:-33.20407949,lon:-70.67895685},
+  {n:"ESCUELA DE PARVULOS N°2028 SAN SEBASTIAN GARDEN",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"$25.001 A $50.000",niv:"0",rbd:"25917",lat:-33.204247,lon:-70.67828},
+  {n:"ESCUELA ESP. PART. CAMINO A BELEN N¦ 2",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25918",lat:-33.359146,lon:-70.68974},
+  {n:"COLEGIO POLIV. JERUSALEN DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes",rbd:"25926",lat:-33.28161332,lon:-70.87669963},
+  {n:"COLEGIO PADRE PEDRO ARRUPE SAGRADA FAMILIA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"25929",lat:-33.3661808,lon:-70.74398967},
+  {n:"COLEGIO PALMARES",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"25961",lat:-33.35725614,lon:-70.73737333},
+  {n:"ESCUELA ESP. PART. ACONCAGUA DE BATUCO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"25964",lat:-33.23767,lon:-70.807434},
+  {n:"COLEGIO TERCER MILENIO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$25.001 A $50.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"25969",lat:-33.35556417,lon:-70.73925187},
+  {n:"CENTRO EDUCACIONAL DE ADULTOS CEDUCA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"25978",lat:-33.36917,lon:-70.73511},
+  {n:"COLEGIO JUAN LUIS UNDURRAGA ANINAT",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"25988",lat:-33.364773,lon:-70.75768972},
+  {n:"ESCUELA BAS. AMANKAY DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"25991",lat:-33.23859871,lon:-70.80914831},
+  {n:"ESC. ESPECIAL ELSA MATILDE ULRICH JARA",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26003",lat:-33.207962,lon:-70.67226},
+  {n:"COLEGIO  SAN CARLOS DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26033",lat:-33.35727832,lon:-70.7266422},
+  {n:"ESCUELA PART. SAN JOSE DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26035",lat:-33.28825837,lon:-70.87086537},
+  {n:"COLEGIO LO BARNECHEA BICENTENARIO",c:"LO BARNECHEA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes - Media TP tecnica  ninos y jovenes",rbd:"26037",lat:-33.3642831,lon:-70.4990235},
+  {n:"ESCUELA  SAN PEDRO VALLE GRANDE",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26045",lat:-33.32204578,lon:-70.74706347},
+  {n:"COLEGIO DE ADULTOS SEMBRADOR SAN BENITO",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Media HC Adultos",rbd:"26077",lat:-33.20456,lon:-70.67463},
+  {n:"COLEGIO SAN ALBERTO HURTADO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Educacion Basica Adultos sin oficio - Media HC ninos y jovenes - Educacion Media HC Adultos",rbd:"26083",lat:-33.370636,lon:-70.71962767},
+  {n:"COLEGIO SANTIAGO - QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26110",lat:-33.3619934,lon:-70.71952192},
+  {n:"ESC.BAS. EMPRENDER LARAPINTA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26135",lat:-33.29550455,lon:-70.87752956},
+  {n:"LICEO MUNICIPAL BICENTENARIO DE BATUCO",c:"LAMPA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes - Media TP comercial ninos y jovenes",rbd:"26157",lat:-33.227146,lon:-70.80329},
+  {n:"COLEGIO POLIVALENTE SAN PEDRO DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Media HC ninos y jovenes - Media TP comercial ninos y jovenes - Media TP industrial  ninos y jovenes",rbd:"26168",lat:-33.357845,lon:-70.73684},
+  {n:"ESCUELA DE PARVULOS N°2169 MY HOUSE",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"26206",lat:-33.296091,lon:-70.700544},
+  {n:"ESCUELA BASICA PARTICULAR PAICAVI DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"26235",lat:-33.28710515,lon:-70.87739588},
+  {n:"COLEGIO DEL VERBO DIVINO DE CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26238",lat:-33.2826,lon:-70.6446},
+  {n:"ESCUELA ESP. SAN CLEMENTE DE HUECHURABA",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26241",lat:-33.340954,lon:-70.67053},
+  {n:"ESCUELA BASICA MIRAFLORES DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"26249",lat:-33.2770117,lon:-70.87845924},
+  {n:"ESCUELA BAS. VALLE VERDE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26271",lat:-33.18106063,lon:-70.67153235},
+  {n:"COLEGIO WESTON ACADEMY",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26272",lat:-33.36366419,lon:-70.73019933},
+  {n:"ESCUELA BAS. REINA NORTE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26274",lat:-33.18332543,lon:-70.67698831},
+  {n:"ESCUELA ESPECIAL KITARI",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26275",lat:-33.29719,lon:-70.87256},
+  {n:"ESCUELA BASICA BRUNNENWEG",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"$50.001 A $100.000",niv:"0",rbd:"26287",lat:-33.35671894,lon:-70.67200687},
+  {n:"ESCUELA DE PARVULOS N° 2219 WESTON ACADEMY",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"26290",lat:-33.362885,lon:-70.72875},
+  {n:"ESCUELA BAS. INTEGRAL ENLACES DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"26293",lat:-33.28182782,lon:-70.87702428},
+  {n:"COLEGIO MONTAHUE",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26297",lat:-33.350963,lon:-70.67394},
+  {n:"ESCUELA DE PARVULOS PASITOS DE QUILICURA",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"$50.001 A $100.000",niv:"0",rbd:"26310",lat:-33.366745,lon:-70.733795},
+  {n:"COLEGIO LINCOLN INTERN ACADEMY VALLE NORTE CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26311",lat:-33.19401,lon:-70.65999},
+  {n:"ESCUELA DE PARVULOS N°2239 JARDÍN INFANTIL CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"0",rbd:"26326",lat:-33.202827,lon:-70.67526},
+  {n:"COLEGIO DUNALASTAIR VALLE NORTE",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"26335",lat:-33.211987,lon:-70.66491},
+  {n:"ESCUELA DE LENGUAJE MILLARAHUE",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26355",lat:-33.360386,lon:-70.6328},
+  {n:"ESCUELA ESPECIAL UN MUNDO DE PALABRAS",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26357",lat:-33.369377,lon:-70.735146},
+  {n:"COLEGIO SOL DEL VALLE",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$50.001 A $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26379",lat:-33.3250243,lon:-70.7413819},
+  {n:"ESCUELA ESPECIAL SANTA BLANCA",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"26382",lat:-33.358459,lon:-70.506493},
+  {n:"ESCUELA ESPECIAL 2274 MATER",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26396",lat:-33.3635,lon:-70.7184},
+  {n:"COLEGIO PUMAHUE CHICUREO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26399",lat:-33.216617,lon:-70.729929},
+  {n:"ESC.ESPECIAL Nº 2279 SAN EXPEDITO DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26408",lat:-33.299477,lon:-70.87471},
+  {n:"ESCUELA BASICA Nº 2286 LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"26424",lat:-33.27713856,lon:-70.88572184},
+  {n:"ESCUELA ESPECIAL MI MUNDO EN PALABRAS",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26432",lat:-33.286003,lon:-70.88498},
+  {n:"ESCUELA ESPECIAL PARAISO",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26450",lat:-33.289227,lon:-70.87761},
+  {n:"ESCUEL ESPECIAL BAMBÚ",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26474",lat:-33.29477,lon:-70.88207},
+  {n:"COLEGIO LINCOLN COLLEGE HUECHURABA",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26476",lat:-33.35696,lon:-70.67626},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE EL LUCERO",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26490",lat:-33.361496,lon:-70.736374},
+  {n:"COLEGIO SAINT LOUIS SCHOOL",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"26503",lat:-33.166363,lon:-70.790146},
+  {n:"ESCUELA ESPECIAL TERESITA DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26526",lat:-33.17814,lon:-70.65634},
+  {n:"ESCUELA ESPECIAL SAGRADA FAMILIA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual - Educacion Especial Transtornos Especificos del Lenguaje",rbd:"26527",lat:-33.285908,lon:-70.87283},
+  {n:"ESCUELA ESPECIAL ESPERANZA NUEVA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"26530",lat:-33.22992,lon:-70.67253},
+  {n:"ESCUELA ESPECIAL EL PORVENIR",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"31043",lat:-33.28515,lon:-70.833725},
+  {n:"ESCUELA ESPECIAL ANTILLANCA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31046",lat:-33.361437,lon:-70.726096},
+  {n:"COLEGIO ALBORADA DE LAMPA",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"31064",lat:-33.2821942,lon:-70.8883445},
+  {n:"COLEGIO TERRA MONTE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31068",lat:-33.181248,lon:-70.67111},
+  {n:"LICEO BICENT. PROV.STA. TERESA DE LOS ANDES",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"31071",lat:-33.247982,lon:-70.67071},
+  {n:"LICEO PAULA JARAQUEMADA DE QUILICURA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Media HC ninos y jovenes",rbd:"31083",lat:-33.36855,lon:-70.7349},
+  {n:"ESCUELA CAMINA ALTO",c:"COLINA",d:"Municipal",df:"Corporacion Municipal",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31154",lat:-33.187107,lon:-70.66719},
+  {n:"COLEGIO DE ADULTOS SAN ANDRES DE COLINA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"31163",lat:-33.18022,lon:-70.67674},
+  {n:"ESC. ESPECIAL DE LENGUAJE KUMELEN",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31173",lat:-33.36638,lon:-70.723045},
+  {n:"ESCUELA ESPECIAL CENTRO EDUCACIONAL PUKARA",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"31181",lat:-33.20480361,lon:-70.67795331},
+  {n:"COLEGIO DE ADULTOS ALTOS DEL HUERTO",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"31187",lat:-33.131653,lon:-70.80014},
+  {n:"COLEGIO ADULTOS MANQUEHUE",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Educacion Media HC Adultos",rbd:"31192",lat:-33.22977,lon:-70.805176},
+  {n:"ESCUELA BASICA CRISTIANO JERUSALEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"31193",lat:-33.291363,lon:-70.88589},
+  {n:"ESCUELA ESP. DE LENGUAJE LOS TRES REYES MAGOS",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31251",lat:-33.36021,lon:-70.72986},
+  {n:"ESCUELA PART. SANTA MARIA DE GUADALUPE",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31262",lat:-33.203815,lon:-70.6807},
+  {n:"COLEGIO GRACE COLLEGE",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31276",lat:-33.354282,lon:-70.67752},
+  {n:"ESCUELA ESPECIAL N°2395 MI FAMILIA EDUCA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31285",lat:-33.36159,lon:-70.725266},
+  {n:"ESCUELA DE LENGUAJE N°2399 GRANDES SUEÑOS",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31297",lat:-33.29209,lon:-70.87263},
+  {n:"LICEO BICENTENARIO DE EXCELENCIA FRANCISCO BILBAO BARQUIN DE QUILICURA",c:"QUILICURA",d:"Servicio Local de Educación",df:"Servicio Local de Educación",p:"GRATUITO",niv:"Enseñanza Basica - Media HC ninos y jovenes",rbd:"31299",lat:-33.366478,lon:-70.73623},
+  {n:"ESCUELA BÁSICA N°186 MANCHESTER COLLEGE",c:"TILTIL",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$10.001 A $25.000",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"31300",lat:-33.069923,lon:-70.92847},
+  {n:"COLEGIO SAINT JOSEPH SCHOOL",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31373",lat:-33.352543,lon:-70.67854},
+  {n:"ESCUELA ESPECIAL N° 2413, PEUMAYEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"31377",lat:-33.286531,lon:-70.86986061},
+  {n:"ESCUELA BÁSICA PALMARES ORIENTE",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"MAS DE $100.000",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31378",lat:-33.34877,lon:-70.72874},
+  {n:"EDUCAR LO BARNECHEA",c:"LO BARNECHEA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Media HC Adultos",rbd:"31405",lat:-33.350992,lon:-70.505772},
+  {n:"ESCUELA ESPECIAL ENTREPEQUES",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31436",lat:-33.352483,lon:-70.730672},
+  {n:"JARDIN INFANTIL ADONAY",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$10.001 A $25.000",niv:"0",rbd:"31442",lat:-32.85676,lon:-70.59522},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE ARIKI MAU",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31452",lat:-32.83167,lon:-70.59233},
+  {n:"ESC. ESPECIAL Nº 2413 LEYENDA DE NIÑOS",c:"HUECHURABA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"31498",lat:-33.37235,lon:-70.64279},
+  {n:"COLEGIO THE SOUTHLAND",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31499",lat:-33.364781,lon:-70.49593},
+  {n:"ESCUELA BASICA N°2416 TREWHELA´S SCHOOL",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"Educacion Parvularia - Enseñanza Basica - Media HC ninos y jovenes",rbd:"31504",lat:-33.250515,lon:-70.715028},
+  {n:"JARDÍN INFANTIL BAMBOO",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"32080",lat:-33.323736,lon:-70.632078},
+  {n:"COLEGIO SANTA CATALINA",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"$25.001 A $50.000",niv:"0",rbd:"40211",lat:-32.84033254,lon:-70.60857447},
+  {n:"LICEO TEC.PROFESIONAL PEDRO AGUIRRE CERDA",c:"CALLE LARGA",d:"Municipal",df:"Municipal DAEM",p:"GRATUITO",niv:"Educacion Basica Adultos sin oficio - Media HC ninos y jovenes - Educacion Media HC Adultos - Media TP industrial  ninos y jovenes",rbd:"40352",lat:-32.850552,lon:-70.6203},
+  {n:"JARDIN INFANTIL REMOLINO",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia",rbd:"40362",lat:-32.828026,lon:-70.603134},
+  {n:"SALA CUNA Y JARDÍN INFANTIL LAS CAMPANITAS",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41143",lat:-33.354533,lon:-70.721303},
+  {n:"ESCUELA DE PARVULOS Nº2493 JARDÍN INFANTIL LEHIBOU",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41198",lat:-33.308401,lon:-70.655389},
+  {n:"SALA CUNA LARA PINTA EL SOL",c:"LAMPA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41245",lat:-33.297789,lon:-70.870128},
+  {n:"SALA CUNA Y JARDÍN INFANTIL LOS DUENDECITOS",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41261",lat:-33.354187,lon:-70.505387},
+  {n:"CENTRO VITAMINA QUILICURA",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41296",lat:-33.359291,lon:-70.729044},
+  {n:"SALA CUNA Y JARDIN INFANTIL APAPACHO",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41465",lat:-32.838383,lon:-70.607493},
+  {n:"CENTRO VITAMINA SANTA MARTA HUECHURABA",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41485",lat:-33.358791,lon:-70.676431},
+  {n:"ESCUELA ESPECIAL SEMILLITAS DEL VALLE",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"41488",lat:-33.322542,lon:-70.750848},
+  {n:"JARDIN INFANTIL PARTICULAR PEQUEÑO PRINCIPE",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41496",lat:-32.846205,lon:-70.588822},
+  {n:"SALA CUNA Y JARDÍN INFANTIL MANDARINO",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41513",lat:-33.339726,lon:-70.667518},
+  {n:"CENTRO VITAMINA LOS TRAPENSES",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41535",lat:-33.345732,lon:-70.543138},
+  {n:"ESCUELA ESPECIAL PORVENIR",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Discapacidad Intelectual",rbd:"41544",lat:-33.207674,lon:-70.676341},
+  {n:"JARDIN INFANTIL BEGINNERS",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41561",lat:-33.343038,lon:-70.546515},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE PUCALEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"41597",lat:-33.236132,lon:-70.808134},
+  {n:"JARDIN INFANTIL Y SALA CUNA KIDS WAY",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41668",lat:-33.3551779,lon:-70.5310951},
+  {n:"JARDÍN INFANTIL KURUF-KURAF",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41680",lat:-33.3670578,lon:-70.7230145},
+  {n:"SALA CUNA Y JARDIN INFANTIL BOSQUE COLORES",c:"LO BARNECHEA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41687",lat:-33.324747,lon:-70.512082},
+  {n:"CENTRO  VITAMINA CIUDAD EMPRESARIAL",c:"HUECHURABA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41694",lat:-33.3874796,lon:-70.6160124},
+  {n:"CENTRO EDUCATIVO REMOLINO SPA",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41699",lat:-33.3518347,lon:-70.7267669},
+  {n:"JARDIN INFANTIL Y SALA CUNA PETITS MOUSQUETAIRES",c:"LOS ANDES",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41714",lat:-32.8316007,lon:-70.607217},
+  {n:"SALA CUNA KURUF-KURAF",c:"QUILICURA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"41749",lat:-33.3671269,lon:-70.7219439},
+  {n:"ESCUELA BÁSICA SAN PEDRO",c:"COLINA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Parvularia - Enseñanza Basica",rbd:"41813",lat:-33.194513,lon:-70.67799},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE EL GATO Y LA LUNA",c:"QUILICURA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"41823",lat:-33.3604647,lon:-70.7234374},
+  {n:"ESCUELA ESPECIAL DE LENGUAJE LIHUEN",c:"LAMPA",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"Educacion Especial Transtornos Especificos del Lenguaje",rbd:"41952",lat:-33.33322,lon:-70.766833},
+  {n:"ESCUELA ESPECIAL PARA NIÑOS CON AUTISMO NUESTRO MUNDO DIVERSO",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"SIN INFORMACION",niv:"217",rbd:"42161",lat:-32.495107,lon:-70.362485},
+  {n:"ESCUELA HOSPITALARIA SAN JUAN DE DIOS DE LOS ANDES",c:"LOS ANDES",d:"Particular Subvencionado",df:"Particular Subvencionado",p:"GRATUITO",niv:"0",rbd:"42386",lat:-32.82889,lon:-70.59669},
+  {n:"ESCUELA BASICA COLEGIO PIONEROS",c:"COLINA",d:"Particular Pagado",df:"Particular Pagado",p:"SIN INFORMACION",niv:"0",rbd:"42395",lat:-33.2869057565662,lon:-70.6610432}
+];
+
+const COM_COLORS = {
+  'QUILICURA':'#3266ad','HUECHURABA':'#e67e22','COLINA':'#27ae60',
+  'LAMPA':'#8e44ad','LO BARNECHEA':'#e74c3c','LOS ANDES':'#16a085',
+  'CALLE LARGA':'#d35400','TILTIL':'#2c3e50'
+};
+const DEPE_COLORS = {
+  'Municipal':'#1B6FAD','Servicio Local de Educación':'#065A82',
+  'Particular Subvencionado':'#27ae60','Particular Pagado':'#e74c3c',
+  'Corp. de Administracion Delegada':'#8e44ad'
+};
+
+let dirMap = null;
+let dirMarkers = [];
+let dirBuilt = false;
+
+function initDirMap(){
+  if(dirMap) return;
+  dirMap = L.map('dir-map').setView([-33.15, -70.68], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap contributors', maxZoom:18
+  }).addTo(dirMap);
+}
+
+function getFilteredEE(){
+  const com = document.getElementById('dir-comuna').value;
+  const dep = document.getElementById('dir-depe').value;
+  const pago = document.getElementById('dir-pago').value;
+  return EE_DATA.filter(e => {
+    if(com !== 'all' && e.c !== com) return false;
+    if(dep !== 'all' && e.d !== dep) return false;
+    if(pago === 'GRATUITO' && e.p !== 'GRATUITO') return false;
+    if(pago === 'PAGADO' && e.p === 'GRATUITO') return false;
+    return true;
+  });
+}
+
+function renderDirMetrics(data){
+  const total = data.length;
+  const gratuitos = data.filter(e=>e.p==='GRATUITO').length;
+  const municipales = data.filter(e=>e.d==='Municipal'||e.d==='Servicio Local de Educación').length;
+  const subv = data.filter(e=>e.d==='Particular Subvencionado').length;
+  document.getElementById('dir-metrics').innerHTML = `
+    <div class="mc"><p class="ml">Total establecimientos</p><p class="mv">${total}</p><p class="ms">en selección actual</p></div>
+    <div class="mc"><p class="ml">Gratuitos</p><p class="mv" style="color:#166534">${gratuitos}</p><p class="ms">${Math.round(gratuitos/total*100)}% del total</p></div>
+    <div class="mc"><p class="ml">Municipal / SLE</p><p class="mv" style="color:#1B6FAD">${municipales}</p><p class="ms">establecimientos</p></div>
+    <div class="mc"><p class="ml">Part. Subvencionado</p><p class="mv" style="color:#27ae60">${subv}</p><p class="ms">establecimientos</p></div>`;
+}
+
+function renderDirMap(data){
+  initDirMap();
+  dirMarkers.forEach(m=>dirMap.removeLayer(m));
+  dirMarkers = [];
+  data.forEach(e => {
+    const color = COM_COLORS[e.c] || '#555';
+    const marker = L.circleMarker([e.lat, e.lon], {
+      radius:6, fillColor:color, color:'#fff', weight:1.5,
+      opacity:1, fillOpacity:0.85
+    }).bindPopup(`
+      <div style="font-family:sans-serif;min-width:220px;">
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px;">${e.n}</div>
+        <div style="font-size:12px;color:#555;margin-bottom:2px;">📍 ${e.c}</div>
+        <div style="font-size:12px;margin-bottom:2px;"><b>Dependencia:</b> ${e.df}</div>
+        <div style="font-size:12px;margin-bottom:2px;"><b>Arancel:</b> <span style="color:${e.p==='GRATUITO'?'#166534':'#9C0006'};font-weight:500">${e.p}</span></div>
+        <div style="font-size:11px;color:#666;margin-top:4px;">${e.niv}</div>
+      </div>
+    `);
+    marker.addTo(dirMap);
+    dirMarkers.push(marker);
+  });
+  if(data.length > 0){
+    const bounds = L.latLngBounds(data.map(e=>[e.lat,e.lon]));
+    dirMap.fitBounds(bounds, {padding:[20,20]});
+  }
+  // Add legend
+  if(dirMap._legend) dirMap.removeControl(dirMap._legend);
+  const legend = L.control({position:'bottomright'});
+  legend.onAdd = () => {
+    const div = L.DomUtil.create('div');
+    div.style.cssText = 'background:white;padding:8px 12px;border-radius:8px;font-size:11px;font-family:sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.2);';
+    div.innerHTML = '<div style="font-weight:600;margin-bottom:5px;">Comunas</div>' +
+      Object.entries(COM_COLORS).map(([c,col])=>
+        `<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${col};"></div>${c[0]+c.slice(1).toLowerCase()}</div>`
+      ).join('');
+    return div;
+  };
+  legend.addTo(dirMap);
+  dirMap._legend = legend;
+  setTimeout(()=>dirMap.invalidateSize(),200);
+}
+
+function renderDirTable(data){
+  const thead = document.getElementById('dir-thead');
+  const tbody = document.getElementById('dir-tbody');
+  const hStyle = 'padding:7px 10px;text-align:left;color:#1F4E79;font-weight:600;background:#BDD7EE;white-space:nowrap;';
+  thead.innerHTML = `<tr>
+    <th style="${hStyle}">RBD</th>
+    <th style="${hStyle}">Establecimiento</th>
+    <th style="${hStyle}">Comuna</th>
+    <th style="${hStyle}">Dependencia</th>
+    <th style="${hStyle}">Arancel</th>
+    <th style="${hStyle}">Niveles</th>
+  </tr>`;
+  tbody.innerHTML = data.map((e,i) => {
+    const pc = e.p==='GRATUITO'?'#166534':'#9C0006';
+    const pb = e.p==='GRATUITO'?'#DCFCE7':'#FCE4D6';
+    const bg = i%2===0?'transparent':'var(--bg2,#f5f5f5)';
+    const dot = COM_COLORS[e.c]||'#555';
+    return `<tr style="background:${bg}">
+      <td style="padding:5px 10px;color:#666;">${e.rbd}</td>
+      <td style="padding:5px 10px;font-weight:500;max-width:220px;">${e.n}</td>
+      <td style="padding:5px 10px;white-space:nowrap;">
+        <span style="display:inline-flex;align-items:center;gap:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0;"></span>${e.c[0]+e.c.slice(1).toLowerCase()}
+        </span>
+      </td>
+      <td style="padding:5px 10px;font-size:11px;">${e.d}</td>
+      <td style="padding:5px 10px;font-size:11px;color:${pc};background:${pb};font-weight:500;white-space:nowrap;">${e.p}</td>
+      <td style="padding:5px 10px;font-size:10px;color:#666;max-width:200px;">${e.niv}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterDir(){
+  const data = getFilteredEE();
+  document.getElementById('dir-count').textContent = data.length + ' establecimientos';
+  renderDirMetrics(data);
+  renderDirMap(data);
+  renderDirTable(data);
+}
+
+function initDirectorio(){
+  if(dirBuilt) { setTimeout(()=>dirMap&&dirMap.invalidateSize(),200); return; }
+  dirBuilt = true;
+  filterDir();
+}
+
+// ===== CUPOS MEDIA TABLE =====
+const MEDIA_CUPOS = {
+  'Quilicura':    {m1415:3560,m1516:3139,m1617:3398,m1718:3109,d1415:590, d1516:973, d1617:586, d1718:704, tot:13206,pob:16059,dda:2853},
+  'Huechuraba':   {m1415:505, m1516:449, m1617:371, m1718:303, d1415:602, d1516:708, d1617:715, d1718:746, tot:1628, pob:4397, dda:2771},
+  'Lo Barnechea': {m1415:398, m1516:397, m1617:425, m1718:381, d1415:666, d1516:740, d1617:578, d1618:612, tot:1601, pob:4196, dda:2596},
+  'Lampa':        {m1415:1407,m1516:1456,m1617:1233,m1718:1123,d1415:623, d1516:545, d1617:664, d1718:694, tot:5219, pob:7745, dda:2526},
+  'Calle Larga':  {m1415:168, m1516:176, m1617:183, m1718:155, d1415:12,  d1516:32,  d1617:18,  d1718:32,  tot:682,  pob:774,  dda:94},
+  'Tiltil':       {m1415:400, m1516:267, m1617:334, m1718:268, d1415:-101,d1516:34,  d1617:-40, d1718:14,  tot:1269, pob:1175, dda:-93},
+  'Colina':       {m1415:2066,m1516:2001,m1617:1971,m1718:1845,d1415:-238,d1516:-120,d1617:-188,d1718:-126,tot:7883, pob:7209, dda:-672},
+  'Los Andes':    {m1415:1378,m1516:1264,m1617:1227,m1718:1139,d1415:-574,d1516:-462,d1617:-462,d1718:-425,tot:5008, pob:3086, dda:-1923},
+};
+const cuposComs = Object.keys(MEDIA_CUPOS);
+
+function buildCuposTable(){
+  const t = document.getElementById('cupos-table');
+  if(!t || t.innerHTML !== '') return;
+  const dC = v => v>0?'#166534':'#9C0006';
+  const dB = v => v>0?'#DCFCE7':'#FCE4D6';
+  const hA = 'padding:6px 8px;text-align:right;font-weight:600;white-space:nowrap;font-size:11px;';
+  const hL = 'padding:6px 8px;text-align:left;font-weight:600;font-size:11px;';
+  const hdr = `<thead><tr>
+    <th rowspan="2" style="${hL}background:#1F4E79;color:#fff;">Comuna</th>
+    <th colspan="2" style="${hA}background:#1B6FAD;color:#fff;">1° Medio</th>
+    <th colspan="2" style="${hA}background:#065A82;color:#fff;">2° Medio</th>
+    <th colspan="2" style="${hA}background:#1C7293;color:#fff;">3° Medio</th>
+    <th colspan="2" style="${hA}background:#21295C;color:#fff;">4° Medio</th>
+    <th rowspan="2" style="${hA}background:#BDD7EE;color:#1F4E79;">Total<br>Cupos</th>
+    <th rowspan="2" style="${hA}background:#BDD7EE;color:#1F4E79;">Pob.<br>Ajustada</th>
+    <th rowspan="2" style="${hA}background:#BDD7EE;color:#1F4E79;">DDa<br>Total</th>
+  </tr><tr>
+    <th style="${hA}background:#D6E9F8;color:#1F4E79;">Cupos</th><th style="${hA}background:#D6E9F8;color:#1F4E79;">DDa</th>
+    <th style="${hA}background:#C8E0F0;color:#1F4E79;">Cupos</th><th style="${hA}background:#C8E0F0;color:#1F4E79;">DDa</th>
+    <th style="${hA}background:#D6E9F8;color:#1F4E79;">Cupos</th><th style="${hA}background:#D6E9F8;color:#1F4E79;">DDa</th>
+    <th style="${hA}background:#C8E0F0;color:#1F4E79;">Cupos</th><th style="${hA}background:#C8E0F0;color:#1F4E79;">DDa</th>
+  </tr></thead>`;
+  const cS = 'padding:5px 8px;text-align:right;font-size:12px;';
+  const rows = cuposComs.map((c,i)=>{
+    const d=MEDIA_CUPOS[c], bg=i%2===0?'transparent':'rgba(128,128,128,0.05)';
+    return `<tr style="background:${bg}">
+      <td style="padding:5px 8px;font-weight:500;white-space:nowrap;font-size:12px;">${c[0]+c.slice(1).toLowerCase()}</td>
+      <td style="${cS}">${fmt(d.m1415)}</td><td style="${cS}font-weight:600;color:${dC(d.d1415)};background:${dB(d.d1415)};">${fmt(d.d1415)}</td>
+      <td style="${cS}">${fmt(d.m1516)}</td><td style="${cS}font-weight:600;color:${dC(d.d1516)};background:${dB(d.d1516)};">${fmt(d.d1516)}</td>
+      <td style="${cS}">${fmt(d.m1617)}</td><td style="${cS}font-weight:600;color:${dC(d.d1617)};background:${dB(d.d1617)};">${fmt(d.d1617)}</td>
+      <td style="${cS}">${fmt(d.m1718)}</td><td style="${cS}font-weight:600;color:${dC(d.d1718)};background:${dB(d.d1718)};">${fmt(d.d1718)}</td>
+      <td style="${cS}font-weight:600;">${fmt(d.tot)}</td>
+      <td style="${cS}">${fmt(d.pob)}</td>
+      <td style="${cS}font-weight:600;color:${dC(d.dda)};background:${dB(d.dda)};">${fmt(d.dda)}</td>
+    </tr>`;
+  }).join('');
+  const tM1=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].m1415,0);
+  const tM2=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].m1516,0);
+  const tM3=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].m1617,0);
+  const tM4=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].m1718,0);
+  const tD1=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].d1415,0);
+  const tD2=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].d1516,0);
+  const tD3=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].d1617,0);
+  const tD4=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].d1718,0);
+  const tAll=tM1+tM2+tM3+tM4;
+  const tPob=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].pob,0);
+  const tDda=cuposComs.reduce((a,c)=>a+MEDIA_CUPOS[c].dda,0);
+  const totRow=`<tr style="background:#BDD7EE;font-weight:600;font-size:12px;">
+    <td style="padding:5px 8px;color:#1F4E79;">TOTAL TERRITORIO</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tM1)}</td><td style="${cS}color:${dC(tD1)};background:${dB(tD1)};">${fmt(tD1)}</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tM2)}</td><td style="${cS}color:${dC(tD2)};background:${dB(tD2)};">${fmt(tD2)}</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tM3)}</td><td style="${cS}color:${dC(tD3)};background:${dB(tD3)};">${fmt(tD3)}</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tM4)}</td><td style="${cS}color:${dC(tD4)};background:${dB(tD4)};">${fmt(tD4)}</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tAll)}</td>
+    <td style="${cS}color:#1F4E79;">${fmt(tPob)}</td>
+    <td style="${cS}color:${dC(tDda)};background:${dB(tDda)};">${fmt(tDda)}</td>
+  </tr>`;
+  t.innerHTML = hdr + '<tbody>' + rows + totRow + '</tbody>';
+}
+
+</script>
+</body>
+</html>
